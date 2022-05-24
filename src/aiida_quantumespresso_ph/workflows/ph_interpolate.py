@@ -7,7 +7,6 @@ from aiida.tools.data.array.kpoints import get_explicit_kpoints_path
 from aiida.engine import calcfunction, WorkChain, ToContext, if_
 
 PhBaseWorkChain = WorkflowFactory('quantumespresso.ph.base')
-#PhBaseWorkChain = WorkflowFactory('kotiuga_phonon.ph.base')
 PwBaseWorkChain = WorkflowFactory('quantumespresso.pw.base')
 Q2rBaseWorkChain = WorkflowFactory('quantumespresso.q2r.base')
 MatdynBaseWorkChain = WorkflowFactory('quantumespresso.matdyn.base')
@@ -20,6 +19,7 @@ class PhInterpolateWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
+        '''define workchain'''
         # yapf: disable
         super().define(spec)
         spec.input('dynmat_folder', valid_type=(orm.RemoteData,orm.FolderData), required=True,
