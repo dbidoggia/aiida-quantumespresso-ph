@@ -2,11 +2,10 @@
 """Workchain to compute the phonon dispersion from the raw initial unrelaxed structure."""
 from aiida import orm
 from aiida.common.extendeddicts import AttributeDict
+from aiida.engine import ToContext, WorkChain, calcfunction, if_
 from aiida.engine.processes.workchains import workchain
-from aiida.plugins import WorkflowFactory, CalculationFactory
+from aiida.plugins import CalculationFactory, WorkflowFactory
 from aiida.tools.data.array.kpoints import get_explicit_kpoints_path
-from aiida.engine import calcfunction, WorkChain, ToContext, if_
-
 from aiida_quantumespresso.workflows.protocols.utils import ProtocolMixin
 
 PhBaseWorkChain = WorkflowFactory('quantumespresso.ph.base')
@@ -28,7 +27,9 @@ class DynamicalMatrixWorkChain(ProtocolMixin, WorkChain):
         spec.input('structure', valid_type=orm.StructureData, required=False)
         spec.input('clean_workdir', valid_type=orm.Bool, default=lambda: orm.Bool(False))
         spec.input(
-            'parent_folder', valid_type=orm.RemoteData, required=False,
+            'parent_folder',
+            valid_type=orm.RemoteData,
+            required=False,
             help='`RemoteData` folder of a parent `pw.x` calculation.'
         )
 
@@ -49,13 +50,13 @@ class DynamicalMatrixWorkChain(ProtocolMixin, WorkChain):
         spec.output('ph_output_parameters', valid_type=orm.Dict)
         spec.output('ph_retrieved', valid_type=orm.FolderData)
 
-        spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED_PW',
-            message='The `scf` `PwBaseWorkChain` sub process failed')
+        spec.exit_code(401, 'ERROR_SUB_PROCESS_FAILED_PW', message='The `scf` `PwBaseWorkChain` sub process failed')
 
     @classmethod
     def get_protocol_filepath(cls):
         """Return ``pathlib.Path`` to the ``.yaml`` file that defines the protocols."""
         from importlib_resources import files
+
         from . import protocols
         return files(protocols) / 'dynamical_matrix.yaml'
 
@@ -93,7 +94,7 @@ class DynamicalMatrixWorkChain(ProtocolMixin, WorkChain):
 
     def setup(self):
         """Initialise basic context variables."""
-        if 'parent_folder' in self.inputs: 
+        if 'parent_folder' in self.inputs:
             self.ctx.current_folder = self.inputs.parent_folder
         else:
             self.report('no parent given')
@@ -109,7 +110,7 @@ class DynamicalMatrixWorkChain(ProtocolMixin, WorkChain):
 
         workchain_node = self.submit(PwBaseWorkChain, **inputs)
 
-        self.report('launching PwBaseWorkChain<{}>'.format(workchain_node.pk))
+        self.report(f'launching PwBaseWorkChain<{workchain_node.pk}>')
 
         return ToContext(workchain_pw=workchain_node)
 
@@ -130,7 +131,7 @@ class DynamicalMatrixWorkChain(ProtocolMixin, WorkChain):
 
         workchain_node = self.submit(PhBaseWorkChain, **inputs)
 
-        self.report('launching PhBaseWorkChain<{}>'.format(workchain_node.pk))
+        self.report(f'launching PhBaseWorkChain<{workchain_node.pk}>')
 
         return ToContext(workchain_ph=workchain_node)
 
@@ -138,5 +139,7 @@ class DynamicalMatrixWorkChain(ProtocolMixin, WorkChain):
         """Attach the desired output nodes directly as outputs of the workchain."""
         self.report('workchain succesfully completed')
         self.out('pw_output_parameters', self.ctx.workchain_ph.outputs.output_parameters)
-        self.out('ph_output_parameters', self.ctx.workchain_ph.outputs.merged_output_parameters) # change name ph_merged_out & add last ph
+        self.out(
+            'ph_output_parameters', self.ctx.workchain_ph.outputs.merged_output_parameters
+        )  # change name ph_merged_out & add last ph
         self.out('ph_retrieved', self.ctx.workchain_ph.outputs.retrieved)

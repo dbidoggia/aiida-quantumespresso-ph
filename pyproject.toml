@@ -87,6 +87,7 @@ disable = [
     'bad-continuation',
     'duplicate-code',
     'import-outside-toplevel',
+    'inconsistent-return-statements',
     'too-many-arguments',
 ]
 

@@ -2,9 +2,9 @@
 """Workchain to compute the phonon dispersion from the raw initial unrelaxed structure."""
 from aiida import orm
 from aiida.common.extendeddicts import AttributeDict
-from aiida.plugins import WorkflowFactory, CalculationFactory
+from aiida.engine import ToContext, WorkChain, calcfunction, if_
+from aiida.plugins import CalculationFactory, WorkflowFactory
 from aiida.tools.data.array.kpoints import get_explicit_kpoints_path
-from aiida.engine import calcfunction, WorkChain, ToContext, if_
 
 PhBaseWorkChain = WorkflowFactory('quantumespresso.ph.base')
 PwBaseWorkChain = WorkflowFactory('quantumespresso.pw.base')
@@ -19,7 +19,7 @@ class PhInterpolateWorkChain(WorkChain):
 
     @classmethod
     def define(cls, spec):
-        '''define workchain'''
+        """Define workchain."""
         # yapf: disable
         super().define(spec)
         spec.input('dynmat_folder', valid_type=(orm.RemoteData,orm.FolderData), required=True,
@@ -49,7 +49,7 @@ class PhInterpolateWorkChain(WorkChain):
 
         running = self.submit(Q2rBaseWorkChain, **inputs)
 
-        self.report('launching Q2rBaseWorkChain<{}>'.format(running.pk))
+        self.report(f'launching Q2rBaseWorkChain<{running.pk}>')
 
         return ToContext(workflow_q2r=running)
 
@@ -68,19 +68,19 @@ class PhInterpolateWorkChain(WorkChain):
 #            'angle_tolerance': self.defaults.angle_tolerance,
 #        })
 
-        # Somehow we need to retrieve the correct structure, which is the one that is used for the
-        # pw step. However, if we want to support the skipping of the pw step, we can't obtain the structure from
-        # the inputs, but rather will have to obtain it from either the parent_folder input in the ph input group
-        # or from the parent folder in the q2r input group if the ph step is also to be skipped. Currently it is
-        # not clear how this can be done
-        #structure = self.ctx.structure
-        #seekpath_results = seekpath_get_explicit_kpoints_path(structure, parameters)
+# Somehow we need to retrieve the correct structure, which is the one that is used for the
+# pw step. However, if we want to support the skipping of the pw step, we can't obtain the structure from
+# the inputs, but rather will have to obtain it from either the parent_folder input in the ph input group
+# or from the parent folder in the q2r input group if the ph step is also to be skipped. Currently it is
+# not clear how this can be done
+#structure = self.ctx.structure
+#seekpath_results = seekpath_get_explicit_kpoints_path(structure, parameters)
 
-        #inputs['matdyn']['kpoints'] = #seekpath_results['explicit_kpoints']
+#inputs['matdyn']['kpoints'] = #seekpath_results['explicit_kpoints']
 
         running = self.submit(MatdynBaseWorkChain, **inputs)
 
-        self.report('launching MatdynBaseWorkChain<{}>'.format(running.pk))
+        self.report(f'launching MatdynBaseWorkChain<{running.pk}>')
 
         return ToContext(workflow_matdyn=running)
 
@@ -93,9 +93,7 @@ class PhInterpolateWorkChain(WorkChain):
 
 
 @calcfunction
-def seekpath_get_explicit_kpoints_path(structure, parameters):  # pylint: disable=invalid-name
-    """
-    Use the SeekPath wrapper to automatically generate the KpointsData path
-    for the given structure and parameters
-    """
+def seekpath_get_explicit_kpoints_path(structure, parameters):
+    # pylint: disable=invalid-name
+    """Use the SeekPath wrapper to automatically generate the KpointsData path for the given structure and parameters."""
     return get_explicit_kpoints_path(structure, **parameters.get_dict())
